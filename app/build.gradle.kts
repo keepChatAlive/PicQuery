@@ -5,7 +5,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.kapt)
     id("io.objectbox")
-    id("io.gitlab.arturbosch.detekt")
 }
 
 android {
@@ -13,13 +12,12 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "me.grey.picquery"
+        applicationId = "me.grey.picquery.mod"
         minSdk = 29
         targetSdk = 35
-        versionCode = 8
-        versionName = "1.2.0"
+        versionCode = 25
+        versionName = "1.3.7"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -53,6 +51,18 @@ android {
         compose = true
     }
 
+    sourceSets {
+        getByName("main") {
+            // Package the verified local S2 pair directly without duplicating
+            // the ~397 MB model files under src/main/assets.
+            assets.srcDir("../local-models/mobileclip2-s2-onnx")
+        }
+    }
+
+    androidResources {
+        noCompress += "onnx"
+    }
+
     packaging {
         resources {
             excludes.add("/META-INF/{AL2.0,LGPL2.1}")
@@ -76,15 +86,12 @@ dependencies {
     // Bill of Materials
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
-    androidTestImplementation(composeBom)
 
     // Implementation dependencies
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime)
-    implementation(libs.androidx.lifecycle.livedata)
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.legacy)
     implementation(libs.androidx.datastore)
     implementation(libs.androidx.dataStore)
     implementation(libs.androidx.work.runtime)
@@ -128,21 +135,15 @@ dependencies {
     implementation(libs.glide.compose)
     implementation(libs.coil)
     implementation(libs.coil.compose)
+    implementation(libs.ffmpeg.kit.video)
+    implementation(libs.smart.exception.java)
 
     // Other Libraries
     implementation(libs.zoomable)
-    implementation(libs.permissionx)
-    implementation(libs.work.runtime)
 
     // AI & ML
     implementation(libs.onnx.runtime)
     implementation(libs.mlkit.translate)
-
-    // LiteRT
-    implementation(libs.litert)
-    implementation(libs.litert.support.api)
-    implementation(libs.litert.gpu.api)
-    implementation(libs.litert.gpu)
 
     // ObjectBox
     implementation(libs.objectbox.kotlin)
@@ -150,31 +151,7 @@ dependencies {
     // Debug implementation
     debugImplementation(libs.compose.ui.tooling)
 
-    // Annotation processors
-    annotationProcessor(libs.glide.compiler)
-
     // KSP
     ksp(libs.room.compiler)
 
-    // Test implementation
-    testImplementation(libs.junit)
-
-    // Android test implementation
-    androidTestImplementation(libs.androidx.test.ext)
-    androidTestImplementation(libs.espresso.core)
-    androidTestImplementation(libs.androidx.test.monitor)
-    androidTestImplementation(libs.androidx.test.ext)
-}
-
-detekt {
-    toolVersion = "1.23.3"
-    config.setFrom(files("${project.rootDir}/config/detekt/detekt.yml"))
-    buildUponDefaultConfig = true
-    autoCorrect = true
-    parallel = true
-    ignoreFailures = true // Set to true to make detekt non-blocking
-}
-
-tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    jvmTarget = "17"
 }

@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 import me.grey.picquery.R
 import me.grey.picquery.domain.ImageSearcher
 
@@ -63,9 +64,11 @@ fun SearchConfigBottomSheet(imageSearcher: ImageSearcher, onDismiss: () -> Unit)
             )
             Slider(
                 value = topK.toFloat(),
-                onValueChange = { topK = it.toInt() },
-                valueRange = 10f..100f,
-                steps = 9
+                onValueChange = {
+                    topK = ((it / 10f).roundToInt() * 10).coerceIn(10, 2000)
+                },
+                valueRange = 10f..2000f,
+                steps = 198
             )
 
             Button(

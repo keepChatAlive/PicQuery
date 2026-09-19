@@ -34,3 +34,9 @@
 
 # ONNX Runtime
 -keep class ai.onnxruntime.**{*;}
+-keep class ai.onnxruntime.** { *; }
+
+# FFmpegKit uses reflection/JNI entry points; retain them in release builds.
+-keep class com.arthenica.ffmpegkit.** { *; }
+-dontwarn com.arthenica.ffmpegkit.**
+-keep class com.arthenica.smartexception.** { *; }

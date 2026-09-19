@@ -11,7 +11,8 @@ val modulesMobileCLIP2 = module {
         ImageEncoderMobileCLIPv2(
             context = get(),
             preprocessor = get<PreprocessorMobileCLIPv2>(),
-            dispatcher = get()
+            dispatcher = get(),
+            preferenceRepository = get()
         )
     }
 }

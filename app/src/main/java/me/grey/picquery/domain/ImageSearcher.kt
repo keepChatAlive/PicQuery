@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.vector.ImageVector
 import me.grey.picquery.R
 import me.grey.picquery.common.encodeProgressCallback
+import me.grey.picquery.data.data_source.PreferenceRepository
 import me.grey.picquery.data.model.Album
 import me.grey.picquery.data.model.Photo
 import java.util.AbstractMap
@@ -42,11 +43,16 @@ sealed class SearchTarget(val labelResId: Int, val icon: ImageVector) {
 class ImageSearcher(
     private val embeddingService: EmbeddingService,
     private val configurationService: SearchConfigurationService,
-    private val searchOrchestrator: SearchOrchestrator
+    private val searchOrchestrator: SearchOrchestrator,
+    private val preferenceRepository: PreferenceRepository
 ) {
     val searchRange = mutableStateListOf<Album>()
     var isSearchAll = mutableStateOf(true)
     val searchResultIds = mutableStateListOf<Long>()
+    private var availableAlbums: List<Album> = emptyList()
+    private var savedRangeIds: Set<Long> = emptySet()
+    @Volatile private var rangeLoaded = false
+    @Volatile private var rangeChangedSinceLaunch = false
 
     // ============ Delegated to ConfigurationService ============
 
@@ -63,6 +69,13 @@ class ImageSearcher(
      */
     suspend fun initialize() {
         configurationService.initialize()
+        val (savedSearchAll, savedAlbumIds) = preferenceRepository.loadSearchRangeSync()
+        if (!rangeChangedSinceLaunch) {
+            savedRangeIds = savedAlbumIds
+            isSearchAll.value = savedSearchAll
+            rangeLoaded = true
+            applySavedRange()
+        }
     }
 
     // ============ Methods Delegated to EmbeddingService ============
@@ -89,10 +102,29 @@ class ImageSearcher(
     /**
      * Update search range
      */
-    fun updateRange(range: List<Album>, searchAll: Boolean) {
+    suspend fun updateRange(range: List<Album>, searchAll: Boolean) {
+        rangeChangedSinceLaunch = true
+        rangeLoaded = true
+        savedRangeIds = range.mapTo(linkedSetOf()) { it.id }
         searchRange.clear()
         searchRange.addAll(range.sortedByDescending { it.count })
         isSearchAll.value = searchAll
+        preferenceRepository.saveSearchRange(searchAll, savedRangeIds)
+    }
+
+    /** Reconnect persisted album IDs to the current MediaStore/album records. */
+    fun reconcileSearchRange(albums: List<Album>) {
+        availableAlbums = albums
+        if (rangeLoaded) applySavedRange()
+    }
+
+    private fun applySavedRange() {
+        searchRange.clear()
+        searchRange.addAll(
+            availableAlbums
+                .filter { it.id in savedRangeIds }
+                .sortedByDescending { it.count }
+        )
     }
 
     /**
@@ -162,5 +194,18 @@ class ImageSearcher(
             searchResultIds.addAll(results.map { it.first })
             onSuccess(results)
         }
+    }
+
+    suspend fun findSimilarToPhoto(
+        photoId: Long,
+        range: List<Album> = searchRange,
+        onSuccess: suspend (MutableList<Pair<Long, Double>>) -> Unit
+    ) {
+        searchOrchestrator.searchByPhotoId(photoId, range, isSearchAll.value, onSuccess)
+    }
+
+    fun setDisplayResultIds(ids: List<Long>) {
+        searchResultIds.clear()
+        searchResultIds.addAll(ids)
     }
 }

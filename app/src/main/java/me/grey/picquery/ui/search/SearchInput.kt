@@ -6,6 +6,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,15 +15,19 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +44,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import me.grey.picquery.R
 import timber.log.Timber
+import me.grey.picquery.data.model.SearchMediaMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @InternalTextApi
@@ -50,7 +56,10 @@ fun SearchInput(
     onImageSearch: (Uri) -> Unit,
     onQueryChange: (String) -> Unit,
     onNavigateBack: (() -> Unit)? = null,
-    showBackButton: Boolean = false
+    showBackButton: Boolean = false,
+    mediaMode: SearchMediaMode = SearchMediaMode.PHOTO,
+    onMediaModeChange: ((SearchMediaMode) -> Unit)? = null,
+    allowImageSearch: Boolean = true
 ) {
     val keyboard = LocalSoftwareKeyboardController.current
     val textStyle = TextStyle(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
@@ -83,7 +92,10 @@ fun SearchInput(
                     onQueryChange("")
                     keyboard?.show()
                 },
-                onImageSearch = onImageSearch
+                onImageSearch = onImageSearch,
+                mediaMode = mediaMode,
+                onMediaModeChange = onMediaModeChange,
+                allowImageSearch = allowImageSearch
             )
         }
     ) {}
@@ -107,18 +119,47 @@ private fun SearchTrailingIcons(
     queryText: String,
     textStyle: TextStyle,
     onClearText: () -> Unit,
-    onImageSearch: (Uri) -> Unit
+    onImageSearch: (Uri) -> Unit,
+    mediaMode: SearchMediaMode,
+    onMediaModeChange: ((SearchMediaMode) -> Unit)?,
+    allowImageSearch: Boolean
 ) {
     Row {
         // Clear text button
         if (queryText.isNotEmpty()) {
             ClearTextButton(onClearText)
         }
-        // Search settings
-        SearchSettingsSection(
-            textStyle = textStyle,
-            onImageSearch = onImageSearch
-        )
+        if (onMediaModeChange != null) {
+            MediaModeDropdown(mediaMode, onMediaModeChange)
+        }
+        if (allowImageSearch && mediaMode == SearchMediaMode.PHOTO) {
+            SearchSettingsSection(textStyle = textStyle, onImageSearch = onImageSearch)
+        }
+    }
+}
+
+@Composable
+private fun MediaModeDropdown(
+    mediaMode: SearchMediaMode,
+    onMediaModeChange: (SearchMediaMode) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        TextButton(onClick = { expanded = true }) {
+            Text(stringResource(if (mediaMode == SearchMediaMode.PHOTO) R.string.search_mode_photo else R.string.search_mode_video))
+            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            SearchMediaMode.entries.forEach { mode ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(if (mode == SearchMediaMode.PHOTO) R.string.search_mode_photo else R.string.search_mode_video)) },
+                    onClick = {
+                        onMediaModeChange(mode)
+                        expanded = false
+                    }
+                )
+            }
+        }
     }
 }
 

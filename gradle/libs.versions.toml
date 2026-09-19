@@ -25,11 +25,7 @@ koin = "4.1.1"
 koin-compose = "4.1.1"
 koin-androidx-compose = "4.1.1"
 
-# Room Database
-litert = "1.4.1"
-litert-gpu = "1.4.1"
-litert-gpu-api = "1.4.1"
-litert-support = "1.4.1"
+# Databases
 objectboxAndroidObjectbrowser = "5.1.0"
 objectboxAndroid = "5.1.0"
 room = "2.8.4"
@@ -41,9 +37,6 @@ navigation = "2.9.7"
 androidx-core = "1.17.0"
 androidx-lifecycle = "2.10.0"
 androidx-activity-compose = "1.12.3"
-androidx-legacy = "1.0.0"
-androidx-test-monitor = "1.8.0"
-androidx-test-ext = "1.1.3"
 androidx-datastore = "1.2.0"
 androidx-work = "2.11.1"
 androidxDataStore = "1.2.0"
@@ -56,22 +49,16 @@ timber = "5.0.1"
 glide = "4.14.0"
 glide-compose = "1.0.0-beta08"
 coil = "2.7.0"
+ffmpeg-kit = "8.1.7"
+smart-exception = "0.2.1"
 
 # Other Libraries
-workRuntime = "2.11.1"
 zoomable = "2.10.0"
-permissionx = "1.8.1"
 kotlinx-serialization = "1.10.0"
 
 # AI & ML
 onnx = "1.23.2"
 mlkit-translate = "17.0.3"
-
-# Testing
-junit = "4.13.2"
-espresso = "3.4.0"
-googleOssLicensesPlugin = "0.10.10"
-
 
 [libraries]
 # Compose BOM
@@ -93,10 +80,6 @@ accompanist-permissions = { group = "com.google.accompanist", name = "accompanis
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core" }
 androidx-lifecycle-runtime = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "androidx-lifecycle" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidx-activity-compose" }
-androidx-legacy = { group = "androidx.legacy", name = "legacy-support-v4", version.ref = "androidx-legacy" }
-androidx-test-monitor = { group = "androidx.test", name = "monitor", version.ref = "androidx-test-monitor" }
-androidx-test-ext = { group = "androidx.test.ext", name = "junit-ktx", version.ref = "androidx-test-ext" }
-androidx-lifecycle-livedata = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-viewmodel = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "androidx-lifecycle" }
 androidx-datastore = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "androidx-datastore" }
 androidx-work-runtime = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "androidx-work" }
@@ -118,51 +101,38 @@ koin-androidx-compose-navigation = { group = "io.insert-koin", name = "koin-andr
 
 androidx-dataStore = { group = "androidx.datastore", name = "datastore", version.ref = "androidxDataStore" }
 androidx-dataStore-core = { group = "androidx.datastore", name = "datastore-core", version.ref = "androidxDataStore" }
-# Room Database
-litert = { module = "com.google.ai.edge.litert:litert", version.ref = "litert" }
-litert-gpu = { module = "com.google.ai.edge.litert:litert-gpu", version.ref = "litert-gpu" }
-litert-gpu-api = { module = "com.google.ai.edge.litert:litert-gpu-api", version.ref = "litert-gpu-api" }
-litert-support-api = { module = "com.google.ai.edge.litert:litert-support-api", version.ref = "litert-support" }
+# Databases
 objectbox-android = { module = "io.objectbox:objectbox-android", version.ref = "objectboxAndroid" }
 objectbox-android-objectbrowser = { module = "io.objectbox:objectbox-android-objectbrowser", version.ref = "objectboxAndroidObjectbrowser" }
 objectbox-kotlin = { module = "io.objectbox:objectbox-kotlin", version.ref = "objectboxAndroid" }
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
-google-oss-licenses-plugin = { group = "com.google.android.gms",  name = "oss-licenses-plugin", version.ref  = "googleOssLicensesPlugin" }
 
 # Logging
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
 
 # Image Loading
 glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
-glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", version.ref = "glide" }
 glide-compose = { group = "com.github.bumptech.glide", name = "compose", version.ref = "glide-compose" }
 coil = { group = "io.coil-kt", name = "coil", version.ref = "coil" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+ffmpeg-kit-video = { group = "dev.ffmpegkit-maintained", name = "ffmpeg-kit-video", version.ref = "ffmpeg-kit" }
+smart-exception-java = { group = "com.arthenica", name = "smart-exception-java", version.ref = "smart-exception" }
 
 # Other Libraries
-work-runtime = { module = "androidx.work:work-runtime", version.ref = "workRuntime" }
 zoomable = { group = "net.engawapg.lib", name = "zoomable", version.ref = "zoomable" }
-permissionx = { group = "com.guolindev.permissionx", name = "permissionx", version.ref = "permissionx" }
 
 # AI & ML
 onnx-runtime = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnx" }
 mlkit-translate = { group = "com.google.mlkit", name = "translate", version.ref = "mlkit-translate" }
-
-# Testing
-junit = { group = "junit", name = "junit", version.ref = "junit" }
-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
 
 # SplashScreen
 androidx-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "androidx-splashscreen" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android-gradle-plugin" }
-android-library = { id = "com.android.library", version.ref = "android-gradle-plugin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin-serialization" }
 kotlin-kapt = { id = "com.android.legacy-kapt", version.ref = "android-gradle-plugin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-
-#objectbox = { module = "io.objectbox:objectbox-gradle-plugin", version.ref = "objectboxGradlePlugin" }

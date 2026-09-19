@@ -138,6 +138,13 @@ class PhotoRepository(private val context: Context) {
     fun getPhotoListByIds(ids: List<Long>): List<Photo> {
         if (ids.isEmpty()) return emptyList()
 
+        // Keep comfortably below SQLite/MediaProvider bind-variable limits.
+        return ids.distinct().chunked(400).flatMap { chunk ->
+            getPhotoListByIdChunk(chunk)
+        }
+    }
+
+    private fun getPhotoListByIdChunk(ids: List<Long>): List<Photo> {
         // Use parameterized query to prevent SQL injection
         val placeholders = ids.joinToString(",") { "?" }
         val query = context.contentResolver.query(

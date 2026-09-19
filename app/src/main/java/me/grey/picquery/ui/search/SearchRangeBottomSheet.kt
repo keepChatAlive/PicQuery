@@ -3,10 +3,15 @@ package me.grey.picquery.ui.search
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Button
@@ -28,7 +33,6 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -50,8 +54,13 @@ fun SearchRangeBottomSheet(
 ) {
     val scope = rememberCoroutineScope()
     val candidates by albumManager.searchableAlbumList.collectAsState()
-    val selectedList = remember { mutableStateListOf<Album>() }
-    selectedList.addAll(imageSearcher.searchRange.toList())
+    val initialSelectedIds = imageSearcher.searchRange.mapTo(hashSetOf()) { it.id }
+    val candidateIds = candidates.map { it.id }
+    val selectedList = remember(initialSelectedIds, candidateIds) {
+        mutableStateListOf<Album>().apply {
+            addAll(candidates.filter { it.id in initialSelectedIds })
+        }
+    }
     val searchAll = remember { mutableStateOf(imageSearcher.isSearchAll.value) }
 
     val canSave = remember {
@@ -68,7 +77,13 @@ fun SearchRangeBottomSheet(
     ModalBottomSheet(
         onDismissRequest = dismiss
     ) {
-        ListItem(
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .navigationBarsPadding()
+        ) {
+          ListItem(
             headlineContent = {
                 Text(
                     text = stringResource(R.string.search_range_selection_title),
@@ -99,9 +114,9 @@ fun SearchRangeBottomSheet(
             }
         )
 
-        if (candidates.isEmpty()) {
+          if (candidates.isEmpty()) {
             EmptyAlbumTips(onClose = dismiss)
-        } else {
+          } else {
             Box(modifier = Modifier.padding(bottom = 55.dp)) {
                 SearchRangeAlbums(
                     enabled = !searchAll.value,
@@ -111,6 +126,7 @@ fun SearchRangeBottomSheet(
                     onRemove = { selectedList.remove(it) }
                 )
             }
+          }
         }
     }
 }
@@ -135,11 +151,10 @@ private fun SearchRangeAlbums(
         )
         repeat(candidates.size) { index ->
             val album = candidates[index]
-            val selected = remember { mutableStateOf(selectedList.contains(album)) }
             AlbumRangeFilterChip(
                 album = album,
                 enabled = enabled,
-                isSelected = selected.value,
+                isSelected = selectedList.contains(album),
                 onAdd = onAdd,
                 onRemove = onRemove,
                 colors = colors
@@ -157,21 +172,23 @@ private fun AlbumRangeFilterChip(
     onRemove: (Album) -> Unit,
     colors: SelectableChipColors
 ) {
-    var selected by remember { mutableStateOf(isSelected) }
     val context = LocalContext.current
     FilterChip(
         colors = colors,
         onClick = {
             if (enabled) {
-                selected = !selected
-                if (selected) onAdd(album) else onRemove(album)
+                if (isSelected) onRemove(album) else onAdd(album)
             } else {
-                Toast.makeText(context, "Please turn off select all first!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.disable_search_all_first),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         },
         label = { Text(text = "${album.label} (${album.count})") },
-        selected = selected,
-        leadingIcon = if (selected) {
+        selected = isSelected,
+        leadingIcon = if (isSelected) {
             {
                 Icon(
                     imageVector = Icons.Filled.CheckCircle,

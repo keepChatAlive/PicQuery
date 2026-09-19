@@ -33,7 +33,7 @@ class SearchConfigurationService(
 
         // TopK boundaries
         const val MIN_TOP_K = 10
-        const val MAX_TOP_K = 100
+        const val MAX_TOP_K = 2000
     }
 
     private val _matchThreshold = mutableFloatStateOf(DEFAULT_MATCH_THRESHOLD)
@@ -54,8 +54,8 @@ class SearchConfigurationService(
         }
 
         val (savedThreshold, savedTopK) = preferenceRepository.loadSearchConfigurationSync()
-        _matchThreshold.floatValue = savedThreshold
-        _topK.intValue = savedTopK
+        _matchThreshold.floatValue = savedThreshold.coerceIn(MIN_THRESHOLD, MAX_THRESHOLD)
+        _topK.intValue = savedTopK.coerceIn(MIN_TOP_K, MAX_TOP_K)
         isInitialized = true
 
         Timber.tag(TAG).d(

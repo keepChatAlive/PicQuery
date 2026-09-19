@@ -16,14 +16,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.grey.picquery.PicQueryApplication.Companion.context
 import me.grey.picquery.R
 import me.grey.picquery.common.showToast
 import me.grey.picquery.data.data_source.AlbumRepository
-import me.grey.picquery.data.data_source.EmbeddingRepository
+import me.grey.picquery.data.data_source.ObjectBoxEmbeddingRepository
 import me.grey.picquery.data.data_source.PhotoRepository
 import me.grey.picquery.data.model.Album
 import me.grey.picquery.ui.albums.EncodingState
@@ -38,7 +38,7 @@ internal fun aggregateAlbumEncodingProgress(
 class AlbumManager(
     private val albumRepository: AlbumRepository,
     private val photoRepository: PhotoRepository,
-    private val embeddingRepository: EmbeddingRepository,
+    private val embeddingRepository: ObjectBoxEmbeddingRepository,
     private val imageSearcher: ImageSearcher,
     private val ioDispatcher: CoroutineDispatcher
 ) {
@@ -95,18 +95,17 @@ class AlbumManager(
     }
 
     suspend fun initDataFlow() {
-        searchableAlbumFlow().collect {
-            // Retrieve indexed albums from database
-            // Some albums may have been indexed but deleted, so filter from all albums
-            val res = it.toMutableList().sortedByDescending { album: Album -> album.count }
-            _searchableAlbumList.update { res }
-            Timber.tag(TAG).d("Searchable albums: ${it.size}")
-            // Unsearchable albums = all albums - indexed albums
-            val unsearchable = albumList.filter { all -> !it.contains(all) }
-
-            _unsearchableAlbumList.update { (unsearchable.toMutableList().sortedByDescending { album: Album -> album.count }) }
-            Timber.tag(TAG).d("Unsearchable albums: ${unsearchable.size}")
-        }
+        val indexed = searchableAlbumFlow().first()
+        val res = indexed.sortedByDescending { album: Album -> album.count }
+        _searchableAlbumList.value = res
+        imageSearcher.reconcileSearchRange(res)
+        Timber.tag(TAG).d("Searchable albums: ${indexed.size}")
+        val indexedIds = indexed.mapTo(hashSetOf()) { it.id }
+        val unsearchable = albumList
+            .filterNot { it.id in indexedIds }
+            .sortedByDescending { it.count }
+        _unsearchableAlbumList.value = unsearchable
+        Timber.tag(TAG).d("Unsearchable albums: ${unsearchable.size}")
     }
 
     fun toggleAlbumSelection(album: Album) {

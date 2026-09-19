@@ -6,4 +6,6 @@ interface Preprocessor {
     suspend fun preprocessBatch(input: List<Bitmap>): Any
 
     suspend fun preprocess(input: Bitmap): Any
+
+    suspend fun preprocess(input: Bitmap, targetSize: Int): Any = preprocess(input)
 }

@@ -69,7 +69,7 @@ fun IndexMgrScreen(onNavigateBack: () -> Unit, albumManager: AlbumManager = koin
                 if (allAlbum.any { a -> a.id == album.id }) {
                     val albumNow = allAlbum.find { item -> item.id == album.id }
                     if (albumNow!!.count != album.count || albumNow.timestamp != album.timestamp) {
-                        item {
+                        item(key = album.id) {
                             AlbumItem(
                                 indexedAlbum,
                                 album,
@@ -78,10 +78,14 @@ fun IndexMgrScreen(onNavigateBack: () -> Unit, albumManager: AlbumManager = koin
                             )
                         }
                     } else {
-                        item { AlbumItem(indexedAlbum, album, albumManager, FlagAlbumStatusNormal) }
+                        item(key = album.id) {
+                            AlbumItem(indexedAlbum, album, albumManager, FlagAlbumStatusNormal)
+                        }
                     }
                 } else {
-                    item { AlbumItem(indexedAlbum, album, albumManager, FlagAlbumStatusInvalid) }
+                    item(key = album.id) {
+                        AlbumItem(indexedAlbum, album, albumManager, FlagAlbumStatusInvalid)
+                    }
                 }
             }
         }
@@ -95,9 +99,9 @@ private fun AlbumItem(
     albumManager: AlbumManager,
     albumStatusEnum: Int
 ) {
-    var isLoading by remember { mutableStateOf(false) }
-    var isDone by remember { mutableStateOf(false) }
-    var showConfirmDialog by remember { mutableStateOf(false) }
+    var isLoading by remember(album.id) { mutableStateOf(false) }
+    var isDone by remember(album.id) { mutableStateOf(false) }
+    var showConfirmDialog by remember(album.id) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     AlbumIndexDeletionDialog(

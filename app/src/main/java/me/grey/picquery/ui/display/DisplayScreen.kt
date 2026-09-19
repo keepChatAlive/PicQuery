@@ -16,6 +16,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material3.AlertDialog
@@ -47,14 +48,24 @@ import com.bumptech.glide.integration.compose.GlideImage
 import java.io.File
 import me.grey.picquery.R
 import me.grey.picquery.data.model.Photo
+import me.grey.picquery.ui.search.SimilarPhotosBottomSheet
 import net.engawapg.lib.zoomable.rememberZoomState
 import net.engawapg.lib.zoomable.zoomable
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun DisplayScreen(initialPage: Int, onNavigateBack: () -> Unit, displayViewModel: DisplayViewModel = koinViewModel()) {
+fun DisplayScreen(
+    initialPage: Int,
+    onNavigateBack: () -> Unit,
+    onOpenSimilarPhoto: (Int) -> Unit,
+    displayViewModel: DisplayViewModel = koinViewModel()
+) {
+    val context = LocalContext.current
     val photoList by displayViewModel.photoList.collectAsState()
+    val similarPhotos by displayViewModel.similarPhotos.collectAsState()
+    val showSimilarPhotos by displayViewModel.showSimilarPhotos.collectAsState()
+    val similarPhotosLoading by displayViewModel.similarPhotosLoading.collectAsState()
     val pagerState = rememberPagerState(
         initialPage = 0,
         initialPageOffsetFraction = 0f,
@@ -89,6 +100,14 @@ fun DisplayScreen(initialPage: Int, onNavigateBack: () -> Unit, displayViewModel
                         IconButton(onClick = { onNavigateBack() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                         }
+                    },
+                    actions = {
+                        IconButton(onClick = { openPhotoExternally(context, currentPhoto) }) {
+                            Icon(
+                                Icons.Filled.OpenInNew,
+                                contentDescription = stringResource(R.string.open_with_external_app)
+                            )
+                        }
                     }
                 )
             }
@@ -96,9 +115,22 @@ fun DisplayScreen(initialPage: Int, onNavigateBack: () -> Unit, displayViewModel
     ) {
         it.apply { }
         HorizontalPager(state = pagerState) { index ->
-            ZoomablePagerImage(photo = photoList[index]) {
-            }
+            ZoomablePagerImage(
+                photo = photoList[index],
+                onFindSimilar = displayViewModel::findSimilar
+            ) { }
         }
+    }
+    if (showSimilarPhotos) {
+        SimilarPhotosBottomSheet(
+            photos = similarPhotos,
+            loading = similarPhotosLoading,
+            onDismiss = displayViewModel::dismissSimilarPhotos,
+            onPhotoClick = { _, index ->
+                displayViewModel.prepareSimilarResultsForDisplay()
+                onOpenSimilarPhoto(index)
+            }
+        )
     }
 }
 
@@ -153,7 +185,13 @@ private fun TopPhotoInfoBar(currentPhoto: Photo) {
     ExperimentalGlideComposeApi::class
 )
 @Composable
-fun ZoomablePagerImage(modifier: Modifier = Modifier, photo: Photo, maxScale: Float = 5f, onItemClick: () -> Unit) {
+fun ZoomablePagerImage(
+    modifier: Modifier = Modifier,
+    photo: Photo,
+    maxScale: Float = 5f,
+    onFindSimilar: (Photo) -> Unit,
+    onItemClick: () -> Unit
+) {
     val zoomState = rememberZoomState(maxScale = maxScale)
     val context = LocalContext.current
     var showDialog by remember { mutableStateOf(false) }
@@ -163,7 +201,7 @@ fun ZoomablePagerImage(modifier: Modifier = Modifier, photo: Photo, maxScale: Fl
     }
 
     if (showDialog) {
-        openWithExternalApp(callback, photo, context)
+        PhotoContextDialog(callback, photo, context, onFindSimilar)
     }
     Scaffold {
         it.apply { }
@@ -187,27 +225,40 @@ fun ZoomablePagerImage(modifier: Modifier = Modifier, photo: Photo, maxScale: Fl
 }
 
 @Composable
-private fun openWithExternalApp(callback: () -> Unit, photo: Photo, context: Context) {
+private fun PhotoContextDialog(
+    callback: () -> Unit,
+    photo: Photo,
+    context: Context,
+    onFindSimilar: (Photo) -> Unit
+) {
     AlertDialog(
         onDismissRequest = { callback() },
-        title = { Text(stringResource(R.string.open_with_external_app)) },
+        title = { Text(stringResource(R.string.photo_actions)) },
         confirmButton = {
             Button(onClick = {
-                val intent = Intent().apply {
-                    action = Intent.ACTION_VIEW
-                    setDataAndType(photo.uri, "image/*")
-                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                }
-                context.startActivity(Intent.createChooser(intent, "Open with External Apps"))
+                onFindSimilar(photo)
                 callback()
             }) {
-                Text(stringResource(id = android.R.string.ok))
+                Text(stringResource(R.string.find_similar))
             }
         },
         dismissButton = {
-            Button(onClick = { callback() }) {
-                Text(stringResource(id = android.R.string.cancel))
+            Button(onClick = {
+                openPhotoExternally(context, photo)
+                callback()
+            }) {
+                Text(stringResource(R.string.open_with_external_app))
             }
         }
+    )
+}
+
+private fun openPhotoExternally(context: Context, photo: Photo) {
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        setDataAndType(photo.uri, "image/*")
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(
+        Intent.createChooser(intent, context.getString(R.string.open_with_external_app))
     )
 }

@@ -1,86 +1,49 @@
-# PicQuery
+# PicQuery Mod
 
-[中文](README_zh.md)| English
+[中文](README_zh.md)
 
-![cover_en](assets/cover_en.jpg)
+An offline Android application for natural-language photo and video search. It uses a single MobileCLIP2-S2 image/text encoder pair, ObjectBox HNSW vector indexes, MediaStore discovery, and an FFmpeg software-decoding fallback for video frames.
 
-🔍 Search for your local images with natural language, running completely offline. For example, "a laptop on the desk", "sunset by the sea", "kitty in the grass", and so on.  
-Search images by picking a photo from your gallery
-- Totally free, NO in-app purchases
-- Support both English and Chinese
-- Indexing and searching of images works completely offline without worrying about privacy
-- Show results in less than 1 second when searching for 8,000+ photos
-- Wait for indexing on the first time you launch, and search immediately afterward
+## Requirements
 
-## Installation
+- Android Studio or JDK 17
+- Android SDK 36
+- The MobileCLIP2-S2 ONNX model pair, obtained separately
 
-<a href='https://play.google.com/store/apps/details?id=me.grey.picquery&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img style="width:130px" src='./assets/google-play-badge-en.png'/></a>
+The build expects these files:
 
-- Google Play - Search for “PicQuery”
-- Download APK from [Release](https://github.com/greyovo/PicQuery/releases)
-- If you have trouble accessing the above resources, please see [here](README_zh.md##其他方式)
+```text
+local-models/mobileclip2-s2-onnx/text_model.onnx
+local-models/mobileclip2-s2-onnx/vision_model.onnx
+```
 
-> 🍎 For iOS users, please refer to _[Queryable](https://apps.apple.com/us/app/queryable-find-photo-by-text/id1661598353)_ ([Code](https://github.com/mazzzystar/Queryable)), the inspiration behind this application, developed by [@mazzzystar](https://github.com/mazzzystar/Queryable).
+The model binaries are deliberately excluded from Git because each exceeds GitHub's regular file-size limit. Download or regenerate them only when building locally.
 
-## Implementation
+Expected SHA-256 checksums:
 
-> Thanks to [@mazzzystar](https://github.com/mazzzystar) and [@Young-Flash](https://github.com/Young-Flash) for their assistance during the development. The discussion can be viewed [here](https://github.com/mazzzystar/Queryable/issues/12).
+```text
+text_model.onnx   622F10372BCA71B5017F2EFC5F8C2886610A2592B636DE8984D717F03213F031
+vision_model.onnx A841F72C5A5085748BBE271A1D5718ABA877822A15CBA865BDBD0D37036B849E
+```
 
-_PicQuery_ is powered by OpenAI's [CLIP model](https://github.com/openai/CLIP). and Apple's [mobile clip](https://github.com/apple/ml-mobileclip)
+Build a debug APK:
 
+```bash
+./gradlew assembleDebug
+```
 
-First, the images to be searched are encoded into vectors using an image encoder and stored in a database. The text provided by the user during the search is also encoded into a vector. The encoded text vector is then compared with the indexed image vectors to calculate the similarity. The top K images with the highest similarity scores are selected as the query results.
+On Windows:
 
-## Build & Run Clip
+```powershell
+.\gradlew.bat assembleDebug
+```
 
-To build this project, you need to obtain a quantized CLIP model.
+Release builds must be signed with your own Android keystore. To update an already installed build without losing its application data, sign the new APK with the same key as the installed APK.
 
-Run the scripts in this [jupyter notebook](https://colab.research.google.com/drive/1bW1aMg0er1T4aOcU5pCNYVgmVzBJ4-x4#scrollTo=hPscj2wlZlHb) step by step. When you run into the _"You are done"_ section, you should get the following model files in `./result ` directory:
+## Privacy
 
-- `clip-image-int8.ort`
-- `clip-text-int8.ort`
-> If you don't want to run the scripts, you may directly download them from [Google Drive](https://drive.google.com/drive/folders/1VHgEvYyKsiVte8-lywD8qS8SfgcvMc3z?usp=drive_link).
+Photo/video indexing and vector search run locally. Repository signing keys and local Android SDK configuration are intentionally excluded.
 
-## Build & Run mobile-clip
+## Upstream and license
 
-To build this project, you need to obtain a quantized CLIP model.
-
-
-- `vision_model.ort`
-- `text_model.ort`
-
-> download them from [Google Drive](https://drive.google.com/drive/folders/1HgGDfsHHIlDK_Fx0Spnujxt51SgguNCq?usp=drive_link).
-
-Put them into `app\src\main\assets` and you're ready to go.
-
-## Build & Run TF / TFLite
-
-To run a TensorFlow Lite model through LiteRT, put these files into `app\src\main\assets`:
-
-- `image_model.tflite`
-- `text_model.tflite`
-
-The image model should accept the same MobileCLIP-style preprocessed input used by `PreprocessorMobileCLIPv2`, and the text model should accept CLIP BPE token ids as `INT32` or `INT64`.
-You can export the default MobileCLIP2-S0 assets with `python script/model-MobileCLIP2/export_mobileclip2_tflite.py`.
-
-## Choose module
-val AppModules = listOf(viewModelModules, dataModules, modulesCLIP, domainModules) pick the module you want，Clip pair to modulesCLIP module， mobile-clip pair to modulesMobileCLIP module， TF/TFLite pair to modulesTF module
-
-## FAQ
-### Issue 1
-java.lang.RuntimeException: java.lang.reflect.InvocationTarget Exception
-> Don't forget to add model files to `app\src\main\assets` directory
-
-### Issue 2
-java.io.FileNotFoundException: clip-image-int8.ort
-> Make sure the model files are in the correct directory. If you are using mobile-clip or TF/TFLite, make sure you are using the correct model files and change the module to modulesMobileCLIP or modulesTF.
-
-## Acknowledgment
-
-- [mazzzystar/Queryable](https://github.com/mazzzystar/Queryable)
-- [Young-Flash](https://github.com/Young-Flash)
-- [IacobIonut01/Gallery](https://github.com/IacobIonut01/Gallery)
-
-## License
-
-This project is open-source under an MIT license. All rights reserved.
+This modification is based on [greyovo/PicQuery](https://github.com/greyovo/PicQuery). The source code remains available under the [MIT License](LICENSE). Model files and third-party dependencies may have their own terms.

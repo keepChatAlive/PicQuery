@@ -37,10 +37,143 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "2:5254336802631859381",
+      "lastPropertyId": "5:8888176655092913105",
+      "name": "VideoFrameEmbedding",
+      "properties": [
+        {
+          "id": "1:3149876753943172246",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:523917616868173304",
+          "name": "videoId",
+          "indexId": "4:6785178121794155631",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "3:2173414634012877462",
+          "name": "timestampMs",
+          "type": 6
+        },
+        {
+          "id": "4:5925936870858078341",
+          "name": "thumbnailFileName",
+          "type": 9
+        },
+        {
+          "id": "5:8888176655092913105",
+          "name": "data",
+          "indexId": "5:2089255821024794116",
+          "type": 28,
+          "flags": 8
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:3719977760858614531",
+      "lastPropertyId": "16:5308938288742998586",
+      "name": "VideoRecord",
+      "properties": [
+        {
+          "id": "1:6012779363916002488",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7353570597284612541",
+          "name": "sourceKey",
+          "indexId": "6:7245962469522389490",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "3:5831075124550719296",
+          "name": "contentKey",
+          "indexId": "7:2912272004179759334",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:7376633689091497852",
+          "name": "uri",
+          "type": 9
+        },
+        {
+          "id": "5:7899397404505154850",
+          "name": "displayName",
+          "type": 9
+        },
+        {
+          "id": "6:119957269087501798",
+          "name": "mimeType",
+          "type": 9
+        },
+        {
+          "id": "7:3669522981947970610",
+          "name": "sizeBytes",
+          "type": 6
+        },
+        {
+          "id": "8:8867758852583579981",
+          "name": "modifiedSeconds",
+          "type": 6
+        },
+        {
+          "id": "9:6798831284526363656",
+          "name": "durationMs",
+          "type": 6
+        },
+        {
+          "id": "10:1254219878755364204",
+          "name": "cacheDirectoryName",
+          "type": 9
+        },
+        {
+          "id": "11:452902818999894469",
+          "name": "frameCount",
+          "type": 5
+        },
+        {
+          "id": "12:4975681020499025479",
+          "name": "decoder",
+          "type": 9
+        },
+        {
+          "id": "13:3421317903072686391",
+          "name": "indexedAt",
+          "type": 6
+        },
+        {
+          "id": "14:3113527990357152898",
+          "name": "albumId",
+          "indexId": "8:5850610555177501217",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "15:2015586536416912493",
+          "name": "albumName",
+          "type": 9
+        },
+        {
+          "id": "16:5308938288742998586",
+          "name": "indexVersion",
+          "type": 5
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "1:6256215631497182449",
-  "lastIndexId": "3:7623933702471750709",
+  "lastEntityId": "3:3719977760858614531",
+  "lastIndexId": "8:5850610555177501217",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

@@ -39,7 +39,8 @@ fun SearchResultGrid(
     resultList: List<Photo>,
     state: SearchState,
     resultMap: Map<Long, Double>,
-    onClickPhoto: (Photo, Int) -> Unit
+    onClickPhoto: (Photo, Int) -> Unit,
+    onLongClickPhoto: (Photo) -> Unit
 ) {
     when (state) {
         SearchState.NO_INDEX -> UnReadyText()
@@ -60,25 +61,25 @@ fun SearchResultGrid(
                             Box(padding) {
                                 PhotoResultRecommend(
                                     photo = resultList[0],
-                                    onItemClick = { onClickPhoto(resultList[0], 0) }
+                                    onItemClick = { onClickPhoto(resultList[0], 0) },
+                                    onLongClick = { onLongClickPhoto(resultList[0]) }
                                 )
                             }
                         }
                         if (resultList.size > 1) {
                             items(
                                 resultList.size - 1,
-                                key = { resultList[it].id }
+                                key = { resultList[it + 1].id }
                             ) { index ->
-                                Timber.tag("SearchResultGrid").e("index: $index")
                                 Box(padding) {
                                     val photo = resultList[index + 1]
                                     PhotoResultItem(
                                         photo,
                                         resultMap[photo.id]?.toFloat() ?: 0f,
                                         onItemClick = {
-                                            Timber.tag("SearchResultGrid").e("click: $index")
                                             onClickPhoto(resultList[index + 1], index + 1)
-                                        }
+                                        },
+                                        onLongClick = { onLongClickPhoto(photo) }
                                     )
                                 }
                             }
@@ -131,7 +132,11 @@ private fun NoResultText() {
 @ExperimentalFoundationApi
 @ExperimentalGlideComposeApi
 @Composable
-private fun PhotoResultRecommend(photo: Photo, onItemClick: (photo: Photo) -> Unit) {
+private fun PhotoResultRecommend(
+    photo: Photo,
+    onItemClick: (photo: Photo) -> Unit,
+    onLongClick: () -> Unit
+) {
     val interactionSource = remember { MutableInteractionSource() }
     GlideImage(
         modifier = Modifier
@@ -140,7 +145,8 @@ private fun PhotoResultRecommend(photo: Photo, onItemClick: (photo: Photo) -> Un
             .clip(RoundedCornerShape(12.dp))
             .combinedClickable(
                 interactionSource = interactionSource,
-                onClick = { onItemClick(photo) }
+                onClick = { onItemClick(photo) },
+                onLongClick = onLongClick
             ),
         model = File(photo.path),
         contentDescription = photo.label,
@@ -155,9 +161,15 @@ fun PhotoResultItem(
     photo: Photo,
     similarity: Float,
     onItemClick: (photo: Photo) -> Unit,
+    onLongClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier.clickable { onItemClick(photo) }) {
+    Box(
+        modifier = modifier.combinedClickable(
+            onClick = { onItemClick(photo) },
+            onLongClick = onLongClick
+        )
+    ) {
         Column {
             Box(modifier = Modifier.aspectRatio(1f)) {
                 GlideImage(

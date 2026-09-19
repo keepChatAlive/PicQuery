@@ -9,6 +9,8 @@ import me.grey.picquery.data.data_source.EmbeddingRepository
 import me.grey.picquery.data.data_source.ObjectBoxEmbeddingRepository
 import me.grey.picquery.data.data_source.PhotoRepository
 import me.grey.picquery.data.data_source.PreferenceRepository
+import me.grey.picquery.data.video.VideoObjectBoxDatabase
+import me.grey.picquery.data.video.VideoSourceRepository
 import me.grey.picquery.domain.AlbumManager
 import me.grey.picquery.domain.EmbeddingService
 import me.grey.picquery.domain.ImageSearcher
@@ -17,13 +19,16 @@ import me.grey.picquery.domain.SearchConfigurationService
 import me.grey.picquery.domain.SearchOrchestrator
 import me.grey.picquery.domain.SimilarityConfigurationService
 import me.grey.picquery.domain.SimilarityManager
-import me.grey.picquery.feature.tf.modulesTF
+import me.grey.picquery.domain.VideoIndexManager
+import me.grey.picquery.feature.mobileclip2.modulesMobileCLIP2
 import me.grey.picquery.ui.display.DisplayViewModel
 import me.grey.picquery.ui.home.HomeViewModel
 import me.grey.picquery.ui.photoDetail.PhotoDetailViewModel
 import me.grey.picquery.ui.search.SearchViewModel
 import me.grey.picquery.ui.setting.SettingViewModel
 import me.grey.picquery.ui.simlilar.SimilarPhotosViewModel
+import me.grey.picquery.ui.video.VideoViewModel
+import me.grey.picquery.ui.video.VideoIndexManagerViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -32,19 +37,33 @@ private val viewModelModules = module {
     viewModel {
         HomeViewModel(
             imageSearcher = get(),
+            preferenceRepository = get(),
+            photoRepository = get(),
+            ioDispatcher = get()
+        )
+    }
+    viewModel {
+        SearchViewModel(
+            imageSearcher = get(),
+            ioDispatcher = get(),
+            repo = get(),
             preferenceRepository = get()
         )
     }
     viewModel {
-        SearchViewModel(imageSearcher = get(), ioDispatcher = get(), get())
-    }
-    viewModel {
-        DisplayViewModel(photoRepository = get(), imageSearcher = get())
+        DisplayViewModel(
+            photoRepository = get(),
+            imageSearcher = get(),
+            preferenceRepository = get()
+        )
     }
 
-    viewModel { SettingViewModel(preferenceRepository = get()) }
+    viewModel { SettingViewModel(preferenceRepository = get(), imageSearcher = get()) }
 
     viewModel { PhotoDetailViewModel(get(), get()) }
+
+    viewModel { VideoViewModel(get()) }
+    viewModel { VideoIndexManagerViewModel(get()) }
 
     single {
         SimilarPhotosViewModel(get(), get(), get(), get(), get())
@@ -67,6 +86,8 @@ private val dataModules = module {
     }
     single { PhotoRepository(androidContext()) }
     single { PreferenceRepository() }
+    single { VideoSourceRepository(androidContext()) }
+    single { VideoObjectBoxDatabase.instance.repository(androidContext()) }
 }
 
 private val domainModules = module {
@@ -80,7 +101,8 @@ private val domainModules = module {
             imageEncoder = get(),
             textEncoder = get(),
             objectBoxEmbeddingRepository = get(),
-            dispatcher = get()
+            dispatcher = get(),
+            preferenceRepository = get()
         )
     }
 
@@ -109,7 +131,8 @@ private val domainModules = module {
         ImageSearcher(
             embeddingService = get(),
             configurationService = get(),
-            searchOrchestrator = get()
+            searchOrchestrator = get(),
+            preferenceRepository = get()
         )
     }
 
@@ -139,18 +162,33 @@ private val domainModules = module {
             configurationService = get()
         )
     }
+
+    single {
+        VideoIndexManager(
+            context = androidContext(),
+            sourceRepository = get(),
+            indexRepository = get(),
+            imageEncoder = get(),
+            textEncoder = get(),
+            translator = get(),
+            preferenceRepository = get(),
+            searchConfigurationService = get(),
+            dispatcher = get(),
+            scope = get()
+        )
+    }
 }
 
 val workManagerModule = module {
     single { WorkManager.getInstance(get()) }
 }
 
-// need inject encoder here. Use modulesTF instead of modulesCLIP to run TFLite assets.
+// One APK contains one active model: the verified MobileCLIP2-S2 ONNX pair.
 val AppModules = listOf(
     dispatchersKoinModule,
     viewModelModules,
     dataModules,
-    modulesTF,
+    modulesMobileCLIP2,
     domainModules,
     workManagerModule
 )

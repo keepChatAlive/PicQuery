@@ -3,7 +3,6 @@ package me.grey.picquery.data
 import android.content.Context
 import io.objectbox.BoxStore
 import me.grey.picquery.data.dao.ObjectBoxEmbeddingDao
-import me.grey.picquery.data.model.MyObjectBox
 import me.grey.picquery.data.model.ObjectBoxEmbedding
 
 class ObjectBoxDatabase private constructor() {

@@ -4,9 +4,9 @@ import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import android.content.Context
-import android.util.Log
 import java.nio.IntBuffer
 import java.nio.LongBuffer
+import kotlin.math.sqrt
 import me.grey.picquery.common.AssetUtil
 import me.grey.picquery.feature.base.TextEncoder
 import timber.log.Timber
@@ -15,12 +15,10 @@ abstract class TextEncoderONNX(private val context: Context) : TextEncoder {
     private val TAG = this.javaClass.simpleName
     abstract val modelPath: String
     abstract val modelType: Int
+    open val modelFormat: String? = "ORT"
     private var ortSession: OrtSession? = null
     private var tokenizer: BPETokenizer? = null
-
-    private var options = OrtSession.SessionOptions().apply {
-        addConfigEntry("session.load_model_format", "ORT")
-    }
+    private var options: OrtSession.SessionOptions? = null
 
     init {
         Timber.tag(TAG).d("Init $TAG")
@@ -36,7 +34,12 @@ abstract class TextEncoderONNX(private val context: Context) : TextEncoder {
 
         val ortEnv = OrtEnvironment.getEnvironment()
         if (ortSession == null) {
-            ortSession = ortEnv.createSession(AssetUtil.assetFilePath(context, modelPath), options)
+            val modelFile = AssetUtil.assetFilePath(context, modelPath)
+            check(modelFile.isNotBlank()) { "Unable to copy ONNX text model asset: $modelPath" }
+            options = OrtSession.SessionOptions().apply {
+                modelFormat?.let { addConfigEntry("session.load_model_format", it) }
+            }
+            ortSession = ortEnv.createSession(modelFile, checkNotNull(options))
         }
 
         val session = checkNotNull(ortSession) { "ONNX text encoder session is closed." }
@@ -61,8 +64,16 @@ abstract class TextEncoderONNX(private val context: Context) : TextEncoder {
                 val floatBuffer = resultBuffer.floatBuffer
                 val result = FloatArray(floatBuffer.remaining())
                 floatBuffer.get(result)
-                return result
+                return result.l2Normalized()
             }
         }
+    }
+
+    private fun FloatArray.l2Normalized(): FloatArray {
+        val norm = sqrt(fold(0.0) { sum, value -> sum + value * value }).toFloat()
+        if (norm > 0f) {
+            for (index in indices) this[index] /= norm
+        }
+        return this
     }
 }

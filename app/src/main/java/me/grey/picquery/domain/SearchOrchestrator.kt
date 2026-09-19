@@ -75,6 +75,7 @@ class SearchOrchestrator(
         withContext(dispatcher) {
             if (searchingLock) {
                 Timber.tag(TAG).w("Search already in progress")
+                onSuccess(mutableListOf())
                 return@withContext
             }
             searchingLock = true
@@ -82,6 +83,37 @@ class SearchOrchestrator(
             try {
                 val imageFeatures = embeddingService.encodeBitmap(bitmap)
                 val results = performVectorSearchResults(imageFeatures, range, isSearchAll)
+                onSuccess(results)
+            } finally {
+                searchingLock = false
+            }
+        }
+    }
+
+    suspend fun searchByPhotoId(
+        photoId: Long,
+        range: List<Album>,
+        isSearchAll: Boolean,
+        onSuccess: suspend (MutableList<Pair<Long, Double>>) -> Unit
+    ) {
+        withContext(dispatcher) {
+            if (searchingLock) {
+                onSuccess(mutableListOf())
+                return@withContext
+            }
+            searchingLock = true
+            try {
+                val embedding = objectBoxEmbeddingRepository.getEmbeddingByPhotoId(photoId)
+                if (embedding == null) {
+                    onSuccess(mutableListOf())
+                    return@withContext
+                }
+                val results = performVectorSearchResults(
+                    queryVector = embedding.data,
+                    range = range,
+                    isSearchAll = isSearchAll,
+                    excludedPhotoId = photoId
+                )
                 onSuccess(results)
             } finally {
                 searchingLock = false
@@ -155,6 +187,7 @@ class SearchOrchestrator(
 
             mergedScores.entries
                 .sortedBy { it.value }
+                .take(configurationService.getTopK())
                 .map { it.key to it.value }
                 .toMutableList()
         } finally {
@@ -165,12 +198,13 @@ class SearchOrchestrator(
     private suspend fun performVectorSearchResults(
         queryVector: FloatArray,
         range: List<Album>,
-        isSearchAll: Boolean
+        isSearchAll: Boolean,
+        excludedPhotoId: Long? = null
     ): MutableList<Pair<Long, Double>> = withContext(dispatcher) {
         try {
             Timber.tag(TAG).d("Starting vector search V2")
 
-            val albumIds = if (range.isEmpty() || isSearchAll) {
+            val albumIds = if (isSearchAll) {
                 Timber.tag(TAG).d("Search from all albums")
                 null
             } else {
@@ -180,14 +214,18 @@ class SearchOrchestrator(
 
             val searchResults = objectBoxEmbeddingRepository.searchNearestVectors(
                 queryVector = queryVector,
-                topK = configurationService.getTopK(),
+                topK = configurationService.getTopK() + if (excludedPhotoId != null) 1 else 0,
                 similarityThreshold = configurationService.getMatchThreshold(),
                 albumIds = albumIds
             )
 
             Timber.tag(TAG).d("Search completed: found ${searchResults.size} results")
 
-            searchResults.map { it.get().photoId to it.score }.toMutableList()
+            searchResults.asSequence()
+                .map { it.get().photoId to it.score }
+                .filterNot { it.first == excludedPhotoId }
+                .take(configurationService.getTopK())
+                .toMutableList()
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Vector search failed")
             mutableListOf()

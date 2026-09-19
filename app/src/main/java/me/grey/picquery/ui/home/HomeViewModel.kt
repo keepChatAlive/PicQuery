@@ -1,14 +1,22 @@
 package me.grey.picquery.ui.home
 
-import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import me.grey.picquery.data.data_source.PhotoRepository
+import me.grey.picquery.data.model.Photo
+import me.grey.picquery.data.model.SavedSearch
 import me.grey.picquery.domain.ImageSearcher
 import timber.log.Timber
+import me.grey.picquery.data.model.SearchMediaMode
 
 data class UserGuideTaskState(
     val permissionDone: Boolean = false,
@@ -18,9 +26,16 @@ data class UserGuideTaskState(
         get() = permissionDone && indexDone
 }
 
+data class SavedSearchPreview(
+    val search: SavedSearch,
+    val previewPhotos: List<Photo>
+)
+
 class HomeViewModel(
     private val imageSearcher: ImageSearcher,
-    private val preferenceRepository: me.grey.picquery.data.data_source.PreferenceRepository
+    private val preferenceRepository: me.grey.picquery.data.data_source.PreferenceRepository,
+    private val photoRepository: PhotoRepository,
+    private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
     companion object {
@@ -29,13 +44,38 @@ class HomeViewModel(
 
     private val _searchText = MutableStateFlow("")
     val searchText: StateFlow<String> = _searchText
+    private val _searchMode = MutableStateFlow(SearchMediaMode.PHOTO)
+    val searchMode: StateFlow<SearchMediaMode> = _searchMode
 
     val userGuideVisible = mutableStateOf(false)
+
+    val savedSearches = preferenceRepository.getSavedSearches().map { searches ->
+        withContext(ioDispatcher) {
+            searches.map { search ->
+                SavedSearchPreview(
+                    search = search,
+                    previewPhotos = photoRepository.getPhotoListByIds(search.resultPhotoIds.take(3))
+                )
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val currentGuideState = mutableStateOf(UserGuideTaskState())
 
     fun onQueryChange(query: String) {
         _searchText.value = query
+    }
+
+    fun setSearchMode(mode: SearchMediaMode) {
+        _searchMode.value = mode
+    }
+
+    fun togglePin(id: String) {
+        viewModelScope.launch { preferenceRepository.toggleSavedSearchPin(id) }
+    }
+
+    fun deleteSavedSearch(id: String) {
+        viewModelScope.launch { preferenceRepository.deleteSavedSearch(id) }
     }
 
     init {

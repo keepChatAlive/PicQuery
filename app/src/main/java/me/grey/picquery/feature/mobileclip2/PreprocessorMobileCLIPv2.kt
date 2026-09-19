@@ -23,19 +23,23 @@ class PreprocessorMobileCLIPv2 : Preprocessor {
     }
 
     override suspend fun preprocess(input: Bitmap): FloatBuffer {
-        val bitmap = Bitmap.createScaledBitmap(input, IMAGE_SIZE, IMAGE_SIZE, true)
+        return preprocess(input, IMAGE_SIZE)
+    }
+
+    override suspend fun preprocess(input: Bitmap, targetSize: Int): FloatBuffer {
+        val bitmap = Bitmap.createScaledBitmap(input, targetSize, targetSize, true)
         val imageData = FloatBuffer.allocate(
-            DIM_BATCH_SIZE * DIM_PIXEL_SIZE * IMAGE_SIZE * IMAGE_SIZE
+            DIM_BATCH_SIZE * DIM_PIXEL_SIZE * targetSize * targetSize
         )
         imageData.rewind()
 
-        val stride = IMAGE_SIZE * IMAGE_SIZE
+        val stride = targetSize * targetSize
         val bitmapData = IntArray(stride)
         bitmap.getPixels(bitmapData, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
 
-        for (i in 0 until IMAGE_SIZE) {
-            for (j in 0 until IMAGE_SIZE) {
-                val index = IMAGE_SIZE * i + j
+        for (i in 0 until targetSize) {
+            for (j in 0 until targetSize) {
+                val index = targetSize * i + j
                 val pixelValue = bitmapData[index]
                 imageData.put(index, (pixelValue shr 16 and 0xFF) / 255f)
                 imageData.put(index + stride, (pixelValue shr 8 and 0xFF) / 255f)

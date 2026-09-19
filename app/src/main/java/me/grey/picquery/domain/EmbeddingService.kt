@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.chunked
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapMerge
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
@@ -17,6 +19,7 @@ import kotlinx.coroutines.withContext
 import me.grey.picquery.common.encodeProgressCallback
 import me.grey.picquery.common.loadThumbnail
 import me.grey.picquery.data.data_source.ObjectBoxEmbeddingRepository
+import me.grey.picquery.data.data_source.PreferenceRepository
 import me.grey.picquery.data.model.ObjectBoxEmbedding
 import me.grey.picquery.data.model.Photo
 import me.grey.picquery.data.model.PhotoBitmap
@@ -39,7 +42,8 @@ class EmbeddingService(
     private val imageEncoder: ImageEncoder,
     private val textEncoder: TextEncoder,
     private val objectBoxEmbeddingRepository: ObjectBoxEmbeddingRepository,
-    private val dispatcher: CoroutineDispatcher
+    private val dispatcher: CoroutineDispatcher,
+    private val preferenceRepository: PreferenceRepository
 ) {
     companion object {
         private const val TAG = "EmbeddingService"
@@ -112,9 +116,12 @@ class EmbeddingService(
 
         withContext(dispatcher) {
             val cur = AtomicInteger(0)
+            val concurrency = preferenceRepository.loadIndexingRuntimeSettings().concurrency
 
             photos.asFlow()
-                .map { photo -> loadAndPreprocessPhoto(photo) }
+                .flatMapMerge(concurrency) { photo ->
+                    flow { emit(loadAndPreprocessPhoto(photo)) }
+                }
                 .filterNotNull()
                 .buffer(BUFFER_SIZE)
                 .chunked(CHUNK_SIZE)
